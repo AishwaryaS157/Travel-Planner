@@ -1,0 +1,28 @@
+{
+  "name": "ai-travel-planner-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agentic trip planner: Gemini tool-use loop over Amadeus (flights/hotels) and Foursquare (restaurants/attractions) to build a real, budget-aware day-by-day itinerary.",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@google/genai": "^2.15.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
