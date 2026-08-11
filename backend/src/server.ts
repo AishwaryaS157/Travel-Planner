@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ApiError } from "@google/genai";
 import { getTripCatalog, finalizeTrip } from "./agent/index.js";
 import type { TripRequest, DayPlan, FlightOption } from "./types.js";
 
@@ -9,6 +9,13 @@ function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing required environment variable: ${name}`);
   return value;
+}
+
+function errorMessage(err: unknown, fallback: string): string {
+  if (err instanceof ApiError && err.status === 429) {
+    return "Today's quota reached";
+  }
+  return err instanceof Error ? err.message : fallback;
 }
 
 const ai = new GoogleGenAI({ apiKey: requireEnv("GEMINI_API_KEY") });
@@ -103,7 +110,7 @@ app.post("/api/trip/catalog", async (req, res) => {
     res.json(catalog);
   } catch (err) {
     console.error(err);
-    res.status(502).json({ error: err instanceof Error ? err.message : "Failed to build trip catalog" });
+    res.status(502).json({ error: errorMessage(err, "Failed to build trip catalog") });
   }
 });
 
@@ -120,7 +127,7 @@ app.post("/api/trip/finalize", async (req, res) => {
     res.json(itinerary);
   } catch (err) {
     console.error(err);
-    res.status(502).json({ error: err instanceof Error ? err.message : "Trip finalization failed" });
+    res.status(502).json({ error: errorMessage(err, "Trip finalization failed") });
   }
 });
 
