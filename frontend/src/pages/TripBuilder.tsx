@@ -23,6 +23,8 @@ function buildInitialDays(request: TripRequest): DayPlan[] {
 
 export default function TripBuilder({ request, catalog, onFinalize, loading }: Props) {
   const [days, setDays] = useState<DayPlan[]>(() => buildInitialDays(request));
+  const [otherEnabled, setOtherEnabled] = useState<boolean[]>(() => days.map(() => false));
+  const [otherText, setOtherText] = useState<string[]>(() => days.map(() => ""));
 
   function updateMeal(dayIndex: number, meal: "breakfast" | "lunch" | "dinner", value: string) {
     setDays((prev) =>
@@ -37,6 +39,38 @@ export default function TripBuilder({ request, catalog, onFinalize, loading }: P
         const activities = d.activities.includes(name)
           ? d.activities.filter((a) => a !== name)
           : [...d.activities, name];
+        return { ...d, activities };
+      }),
+    );
+  }
+
+  function toggleOther(dayIndex: number) {
+    const enabling = !otherEnabled[dayIndex];
+    setOtherEnabled((prev) => prev.map((v, i) => (i === dayIndex ? enabling : v)));
+
+    if (!enabling) {
+      const trimmed = otherText[dayIndex].trim();
+      setOtherText((prev) => prev.map((v, i) => (i === dayIndex ? "" : v)));
+      if (trimmed) {
+        setDays((prev) =>
+          prev.map((d, i) =>
+            i === dayIndex ? { ...d, activities: d.activities.filter((a) => a !== trimmed) } : d,
+          ),
+        );
+      }
+    }
+  }
+
+  function updateOtherText(dayIndex: number, value: string) {
+    const prevTrimmed = otherText[dayIndex].trim();
+    setOtherText((prev) => prev.map((v, i) => (i === dayIndex ? value : v)));
+    setDays((prev) =>
+      prev.map((d, i) => {
+        if (i !== dayIndex) return d;
+        let activities = d.activities;
+        if (prevTrimmed) activities = activities.filter((a) => a !== prevTrimmed);
+        const trimmed = value.trim();
+        if (trimmed) activities = [...activities, trimmed];
         return { ...d, activities };
       }),
     );
@@ -125,17 +159,37 @@ export default function TripBuilder({ request, catalog, onFinalize, loading }: P
             <div className="activity-picker">
               <span className="interests-label">Activities</span>
               <div className="interests-grid">
-                {catalog.attractions.map((a) => (
-                  <label key={a.name} className="interest-chip">
-                    <input
-                      type="checkbox"
-                      checked={day.activities.includes(a.name)}
-                      onChange={() => toggleActivity(i, a.name)}
-                    />
-                    {a.name}
-                  </label>
-                ))}
+                {catalog.attractions
+                  .filter(
+                    (a) =>
+                      day.activities.includes(a.name) ||
+                      !days.some((d, di) => di !== i && d.activities.includes(a.name)),
+                  )
+                  .map((a) => (
+                    <label key={a.name} className="interest-chip">
+                      <input
+                        type="checkbox"
+                        checked={day.activities.includes(a.name)}
+                        onChange={() => toggleActivity(i, a.name)}
+                      />
+                      {a.name}
+                    </label>
+                  ))}
+                <label className="interest-chip">
+                  <input type="checkbox" checked={otherEnabled[i]} onChange={() => toggleOther(i)} />
+                  Other
+                </label>
               </div>
+              {otherEnabled[i] && (
+                <input
+                  type="text"
+                  className="other-activity-input"
+                  placeholder="Enter a place"
+                  value={otherText[i]}
+                  onChange={(e) => updateOtherText(i, e.target.value)}
+                  autoFocus
+                />
+              )}
             </div>
           </div>
         ))}
